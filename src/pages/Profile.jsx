@@ -1,0 +1,216 @@
+import React, { useEffect } from "react";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import styled from "styled-components";
+import Modal from "../components/Modal";
+import { helpHttp } from "../helpers/helpHttp";
+import { getUserProfile } from "../utils/APIRoutes";
+import Loader from "../assets/loader.gif";
+import { useDispatch, useSelector } from "react-redux";
+import { setCurrentChat } from "../actions/currentChat";
+import {
+  BsFillBookmarkCheckFill,
+  BsFillBookmarkXFill,
+  BsFillPeopleFill,
+  BsFillPersonCheckFill,
+  BsFillPersonPlusFill,
+} from "react-icons/bs";
+import NewPost from "../components/newPost";
+
+const Profile = () => {
+  const [profileInfo, setProfileInfo] = useState(null);
+  const params = useParams();
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const currentUser = useSelector((state) => state.currentUser);
+  const [isSend, setIsSend] = useState(false);
+  const [isFriend, setIsFriend] = useState(false);
+  const [isDecline, setIsDecline] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    if (currentUser) {
+      if (!params.userId.length == 0) {
+        helpHttp()
+          .get(`${getUserProfile}/${params.userId}/${currentUser._id}`)
+          .then((request) => {
+            if (!request.error) {
+              if (request.status) {
+                console.log(request);
+                setProfileInfo(request.data);
+                setLoading(false);
+              }
+            } else {
+              navigate("/404");
+            }
+          });
+      }
+    }
+  }, [currentUser]);
+  const optionsFriend = () => {
+    if (isFriend) {
+      return <button>{<BsFillPeopleFill />}</button>;
+    }
+
+    if (isDecline) {
+      return (
+        <button>
+          <BsFillPersonPlusFill />
+        </button>
+      );
+    }
+
+    return (
+      <>
+        <button
+          className="btn-accept"
+          onClick={() => {
+            setIsFriend(true);
+            dispatch(acceptFriendRequest(data.user));
+          }}
+        >
+          {<BsFillBookmarkCheckFill />}
+        </button>
+        <button
+          className="btn-decline"
+          onClick={() => {
+            setIsDecline(true);
+            declineFriendRequest(data.user);
+          }}
+        >
+          {<BsFillBookmarkXFill />}
+        </button>
+      </>
+    );
+  };
+
+  const renderSwitch = (param) => {
+    switch (param) {
+      case "NONE":
+        return (
+          <button
+            onClick={() => {
+              setIsSend(true);
+              sendRequestfriend(data.user);
+            }}
+          >
+            {isSend ? <BsFillPersonCheckFill /> : <BsFillPersonPlusFill />}
+          </button>
+        );
+      case "REQUEST-SEND":
+        return <button>{<BsFillPersonCheckFill />}</button>;
+
+      case "FRIEND":
+        return <button>{<BsFillPeopleFill />}</button>;
+
+      case "REQUEST-RECIVED":
+        return <div className="user-nav">{optionsFriend()}</div>;
+    }
+  };
+
+  return (
+    <>
+      {loading && (
+        <Modal>
+          <img src={Loader} alt="" />
+        </Modal>
+      )}
+
+      {profileInfo && (
+        <Container>
+          <div className="container-user-info">
+            <div className="profile-picture-container">
+              <img src={profileInfo.avatarImage} alt="avatar profile" />
+            </div>
+            <div className="user-info">
+              <div className="nav-user-info">
+                <h2 className="username">{profileInfo.username}</h2>
+                <button>{renderSwitch(profileInfo.friendStatus)}</button>
+                <button
+                  onClick={() => {
+                    dispatch(setCurrentChat(profileInfo));
+                    navigate("/chat");
+                  }}
+                >
+                  Message
+                </button>
+              </div>
+              <div className="description">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi
+                non itaque temporibus nam autem neque ipsum eum rerum debitis ea
+                repellat mollitia quaerat, nihil sed labore odio explicabo
+                quisquam eius.
+              </div>
+            </div>
+          </div>
+          <div></div>
+        </Container>
+      )}
+    </>
+  );
+};
+
+export default Profile;
+
+const Container = styled.div`
+  color: #fff;
+
+  .container-user-info {
+    border-bottom: 1px solid #555;
+    max-width: 970px;
+    margin: auto;
+    display: flex;
+
+    .profile-picture-container {
+      border-radius: 50%;
+      height: 8rem;
+      margin: 2rem;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      width: 8rem;
+      background-color: var(--bg-color-second);
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    .user-info {
+      width: 80%;
+      margin: auto;
+      padding: 2rem;
+      position: relative;
+
+      .nav-user-info {
+        display: flex;
+
+        .username {
+          position: relative;
+          margin: 0 0.5rem;
+        }
+
+        button {
+          background: var(--second-color);
+          min-width: 4rem;
+          border: none;
+          color: #fff;
+          font-weight: 700;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          max-width: fit-content;
+          margin: 0 0.3rem;
+        }
+
+        button:hover {
+          background: var(--primary-color);
+        }
+      }
+      .description {
+        width: 75%;
+        padding: 1rem;
+      }
+    }
+  }
+`;
